@@ -120,8 +120,19 @@
           </svg>
           <span id="active-agent-label">Catalog Assistant</span>
         </div>
-        <div class="chat-tab" id="tab-doc-status" style="display: none; margin-left: auto;">
-          <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);" id="attached-doc-badge">Document Active</span>
+        
+        <div class="chat-tab-actions">
+          <div class="chat-tab" id="tab-doc-status" style="display: none; padding: 0;">
+            <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);" id="attached-doc-badge">Document Active</span>
+          </div>
+          <button class="btn-chat-toggle" id="chat-width-toggle-btn" title="Expand / Compact Chat View">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
         </div>
       </div>
 

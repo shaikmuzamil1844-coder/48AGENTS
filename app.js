@@ -19,6 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = document.getElementById("agent-modal");
   const modalCloseBtn = document.getElementById("modal-close-btn");
   const modalBody = document.getElementById("modal-body-content");
+  const chatWidthToggleBtn = document.getElementById("chat-width-toggle-btn");
+  const appContainer = document.querySelector(".app-container");
   
   // Settings Modal Elements
   const settingsBtn = document.getElementById("settings-btn");
@@ -551,24 +553,106 @@ Please structure your response strictly to meet these enterprise expectations. U
     }
   }
 
-  // Simple Markdown Renderer
+  // Markdown & Table Renderer (Responsive, non-overflowing)
   function renderSimpleMarkdown(md) {
-    let html = escapeHtml(md);
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3 style="font-size: 0.95rem; color: var(--accent-cyan); margin: 6px 0 3px;">$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2 style="font-size: 1.05rem; color: #fff; margin: 8px 0 4px;">$1</h2>');
-    // Bullet points
-    html = html.replace(/^\* (.*$)/gim, '<li style="margin-left: 14px; font-size: 0.85rem;">$1</li>');
-    html = html.replace(/^- (.*$)/gim, '<li style="margin-left: 14px; font-size: 0.85rem;">$1</li>');
-    // Code blocks
-    html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.8rem; overflow-x: auto;"><code>$1</code></pre>');
+    if (!md) return "";
+    let text = escapeHtml(md);
+
+    // Extract and preserve code blocks
+    const codeBlocks = [];
+    text = text.replace(/```([\s\S]*?)```/g, (_, code) => {
+      const id = `__CODE_BLOCK_${codeBlocks.length}__`;
+      codeBlocks.push(`<pre class="chat-code-block"><code>${code}</code></pre>`);
+      return id;
+    });
+
     // Inline code
-    html = html.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 4px; border-radius: 4px; font-size: 0.82rem;">$1</code>');
-    // Line breaks
-    html = html.replace(/\n\n/g, '<br><br>');
-    return html;
+    text = text.replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>');
+
+    // Bold & italic
+    text = text.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Headers
+    text = text.replace(/^### (.*$)/gim, '<h3 class="chat-h3">$1</h3>');
+    text = text.replace(/^## (.*$)/gim, '<h2 class="chat-h2">$1</h2>');
+    text = text.replace(/^# (.*$)/gim, '<h1 class="chat-h1">$1</h1>');
+
+    // Process line-by-line for tables, lists, and paragraphs
+    const lines = text.split("\n");
+    const formattedLines = [];
+    let inTable = false;
+    let tableRows = [];
+
+    function flushTable() {
+      if (tableRows.length === 0) return;
+      let tableHtml = '<div class="table-responsive"><table class="chat-table">';
+      
+      tableRows.forEach((row, idx) => {
+        let cleanRow = row.trim();
+        if (cleanRow.startsWith("|")) cleanRow = cleanRow.slice(1);
+        if (cleanRow.endsWith("|")) cleanRow = cleanRow.slice(0, -1);
+        
+        const cells = cleanRow.split("|").map(c => c.trim());
+        
+        // Skip separator row like |---|---|
+        if (cells.every(c => /^[-:\s]+$/.test(c))) {
+          return;
+        }
+
+        tableHtml += '<tr>';
+        cells.forEach(cell => {
+          const tag = idx === 0 ? 'th' : 'td';
+          tableHtml += `<${tag}>${cell}</${tag}>`;
+        });
+        tableHtml += '</tr>';
+      });
+
+      tableHtml += '</table></div>';
+      formattedLines.push(tableHtml);
+      tableRows = [];
+      inTable = false;
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // Check if line is part of a markdown table
+      if (trimmed.startsWith("|") && (trimmed.endsWith("|") || trimmed.includes("|"))) {
+        inTable = true;
+        tableRows.push(trimmed);
+      } else {
+        if (inTable) {
+          flushTable();
+        }
+
+        if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+          formattedLines.push(`<li class="chat-list-item">${trimmed.slice(2)}</li>`);
+        } else if (/^\d+\.\s/.test(trimmed)) {
+          const itemText = trimmed.replace(/^\d+\.\s/, '');
+          formattedLines.push(`<li class="chat-num-item">${itemText}</li>`);
+        } else if (trimmed === "") {
+          formattedLines.push('<div class="chat-spacer"></div>');
+        } else {
+          formattedLines.push(`<p class="chat-p">${line}</p>`);
+        }
+      }
+    }
+
+    if (inTable) {
+      flushTable();
+    }
+
+    let result = formattedLines.join("\n");
+
+    // Re-insert code blocks
+    codeBlocks.forEach((block, idx) => {
+      result = result.replace(`__CODE_BLOCK_${idx}__`, block);
+    });
+
+    return result;
   }
 
   // Simulated Grounded Output for Active Persona (Used when no API key)
@@ -682,6 +766,17 @@ Please structure your response strictly to meet these enterprise expectations. U
     const nextTheme = currentTheme === "light" ? "dark" : "light";
     document.body.setAttribute("data-theme", nextTheme);
   });
+
+  // Chat Width Toggle
+  if (chatWidthToggleBtn && appContainer) {
+    chatWidthToggleBtn.addEventListener("click", () => {
+      appContainer.classList.toggle("chat-wide");
+      const isWide = appContainer.classList.contains("chat-wide");
+      chatWidthToggleBtn.title = isWide ? "Compact Chat View" : "Expand Chat View";
+      chatWidthToggleBtn.style.color = isWide ? "var(--accent-cyan)" : "var(--text-secondary)";
+      chatWidthToggleBtn.style.borderColor = isWide ? "var(--accent-cyan)" : "var(--border-color)";
+    });
+  }
 
   // Settings Modal Handlers
   settingsBtn.addEventListener("click", () => {
