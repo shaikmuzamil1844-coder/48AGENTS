@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copilot Agent Hub — 48 Enterprise AI Agents & Document Chatbot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a8 8 0 0 0-8 8c0 3.3 2 6.2 5 7.4V20a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2.6c3-1.2 5-4.1 5-7.4a8 8 0 0 0-8-8z"></path>
+          <path d="M10 10h4"></path>
+          <path d="M10 14h4"></path>
+          <path d="M12 6v2"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">
+          <span>Copilot Agent Hub</span>
+          <span class="badge-tag" id="agent-count-badge">48 Agents</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-icon" id="settings-btn" title="Configure Groq API Key">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+      <label class="btn-icon" title="Upload Document or Notes" style="cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <input type="file" id="file-upload-input" accept=".txt,.md,.csv,.json,.pdf,.doc,.docx" style="display: none;">
+      </label>
+      <button class="btn-icon" id="theme-toggle-btn" title="Toggle Dark/Light Mode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- Left Panel: Catalog Explorer -->
+    <section class="catalog-panel">
+      <div class="catalog-header">
+        <div class="catalog-hero">
+          <h1>Enterprise Agent Catalog</h1>
+          <p>48 production-ready Copilot agents grouped by business domain, tier, and problem solved.</p>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="search-filter-bar">
+          <div class="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="catalog-search" class="search-input" placeholder="Search agents, problems, prompts, or personas...">
+          </div>
+
+          <select id="tier-filter" class="filter-select">
+            <option value="all">All Tiers</option>
+            <option value="Tier 1">Tier 1 (High Priority / Executive)</option>
+            <option value="Tier 2">Tier 2 (Core Departmental)</option>
+            <option value="Tier 3">Tier 3 (Operational Support)</option>
+            <option value="Tier 4">Tier 4 (Frontline / Field)</option>
+          </select>
+
+          <select id="complexity-filter" class="filter-select">
+            <option value="all">All Complexities</option>
+            <option value="Starter">Starter</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced Prompting">Advanced Prompting</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Domain Pills -->
+      <nav class="domain-pills" id="domain-pills-container">
+        <!-- Rendered dynamically -->
+      </nav>
+
+      <!-- Agent Cards Grid -->
+      <div class="agent-grid" id="agent-grid-container">
+        <!-- Agent cards will be injected by app.js -->
+      </div>
+    </section>
+
+    <!-- Right Panel: AI Chatbot & Agent Simulator -->
+    <section class="chat-panel">
+      <!-- Active Persona Banner -->
+      <div class="chat-tabs">
+        <div class="chat-tab active" id="tab-chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span id="active-agent-label">Catalog Assistant</span>
+        </div>
+        <div class="chat-tab" id="tab-doc-status" style="display: none; margin-left: auto;">
+          <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);" id="attached-doc-badge">Document Active</span>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="chat-messages" id="chat-messages-container">
+        <!-- Initial Welcome Message -->
+        <div class="message bot">
+          <div class="message-avatar bot-avatar">AI</div>
+          <div class="message-bubble">
+            <p><strong>Welcome to the Copilot Agent Hub!</strong></p>
+            <p style="margin-top: 6px; font-size: 0.86rem; color: var(--text-secondary);">
+              I am your interactive AI Guide. You can:
+            </p>
+            <ul style="margin: 8px 0 8px 18px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6;">
+              <li>Click any of the <strong>48 Agent cards</strong> on the left to adopt its persona.</li>
+              <li>Ask me for recommendations: <em>"Which agent helps with code reviews or sprint planning?"</em></li>
+              <li>Upload or paste any notes/documents to test agent reasoning.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Suggestion Buttons -->
+      <div class="quick-prompts" id="quick-prompts-container">
+        <button class="quick-btn" data-query="Show me all Tier 1 Executive agents">Executive Tier 1</button>
+        <button class="quick-btn" data-query="Which agents are best for Banking & Risk?">Banking Agents</button>
+        <button class="quick-btn" data-query="How does the Sprint Planning Agent work?">Sprint Planning</button>
+        <button class="quick-btn" data-query="Help me create an RCA report for an incident">Incident RCA</button>
+      </div>
+
+      <!-- Chat Input Bar -->
+      <form class="chat-input-bar" id="chat-form">
+        <input type="text" id="chat-input-field" class="chat-input" placeholder="Ask a question or select an agent to test..." autocomplete="off">
+        <button type="submit" class="btn-send" id="btn-send-message" title="Send message">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- Agent Details Modal -->
+  <div class="modal-overlay" id="agent-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close-btn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div id="modal-body-content">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Groq API Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-content" style="max-width: 520px;">
+      <button class="modal-close" id="settings-modal-close-btn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div>
+        <h2 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <span>⚡ Groq Real-Time AI Settings</span>
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">
+          Connect your free Groq API key to enable instant, real-time streaming AI reasoning across all 48 agents and your uploaded documents.
+        </p>
+      </div>
+
+      <div class="detail-row">
+        <label class="detail-label" for="groq-api-key-input">Groq API Key</label>
+        <input type="password" id="groq-api-key-input" class="search-input" placeholder="gsk_..." style="font-family: monospace; font-size: 0.88rem;">
+        <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
+          Stored locally in your browser. Get a free key at <a href="https://console.groq.com/keys" target="_blank" style="color: var(--accent-cyan);">console.groq.com</a>
+        </span>
+      </div>
+
+      <div class="detail-row">
+        <label class="detail-label" for="groq-model-select">Model Selection</label>
+        <select id="groq-model-select" class="filter-select" style="width: 100%;">
+          <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (Recommended • Smartest • 120B)</option>
+          <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Ultra-Fast • High Speed)</option>
+          <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Fast & Analytical)</option>
+        </select>
+      </div>
+
+      <div id="settings-status-box" style="display: none; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.82rem;"></div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+        <button class="btn-send" style="flex: 1; border-radius: var(--radius-md); height: 42px; font-weight: 600; font-size: 0.88rem;" id="btn-save-settings">
+          Save Settings
+        </button>
+        <button class="btn-action" style="padding: 0 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--accent-rose);" id="btn-clear-settings">
+          Remove Key
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
