@@ -30,17 +30,48 @@ document.addEventListener("DOMContentLoaded", () => {
   const groqModelSelect = document.getElementById("groq-model-select");
   const btnSaveSettings = document.getElementById("btn-save-settings");
   const btnClearSettings = document.getElementById("btn-clear-settings");
+  const btnTestSettings = document.getElementById("btn-test-settings");
   const settingsStatusBox = document.getElementById("settings-status-box");
+  const apiStatusBtn = document.getElementById("api-status-btn");
+  const apiStatusText = document.getElementById("api-status-text");
 
   // State
   let activeDomain = "all";
   let activeAgent = null;
   let uploadedDocumentContent = null;
   let uploadedDocumentName = null;
-  let groqApiKey = localStorage.getItem("groq_api_key") || "";
+  let groqApiKey = (localStorage.getItem("groq_api_key") || "").trim();
+
+  const VALID_GROQ_MODELS = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "allam-2-7b"
+  ];
   let storedModel = localStorage.getItem("groq_model");
-  let groqModel = (storedModel && !storedModel.includes("llama")) ? storedModel : "openai/gpt-oss-120b";
+  let groqModel = VALID_GROQ_MODELS.includes(storedModel) ? storedModel : "openai/gpt-oss-120b";
   localStorage.setItem("groq_model", groqModel);
+
+  // Synchronize API status badge in header
+  function updateApiStatusUI() {
+    if (groqApiKey) {
+      if (apiStatusBtn) {
+        apiStatusBtn.className = "api-status-pill connected";
+        apiStatusBtn.title = `Groq Live Connected (${groqModel}) - Click to configure`;
+      }
+      if (apiStatusText) {
+        apiStatusText.textContent = "Live AI: Connected";
+      }
+    } else {
+      if (apiStatusBtn) {
+        apiStatusBtn.className = "api-status-pill disconnected";
+        apiStatusBtn.title = "Click to connect your free Groq API key";
+      }
+      if (apiStatusText) {
+        apiStatusText.textContent = "Connect API Key";
+      }
+    }
+  }
 
   // Extract unique domains
   const domains = ["all", ...new Set(AGENT_CATALOG.map(a => a.domain))];
@@ -321,6 +352,64 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Check if user pasted a Groq API Key (starts with or contains gsk_...)
+    const keyMatch = userQuery.match(/gsk_[a-zA-Z0-9_-]{20,}/);
+    if (keyMatch) {
+      const detectedKey = keyMatch[0];
+      groqApiKey = detectedKey;
+      localStorage.setItem("groq_api_key", detectedKey);
+      updateApiStatusUI();
+      addBotMessage(`
+        <div style="font-weight: 700; color: #34d399; font-size: 0.95rem;">
+          🔑 Groq API Key Saved!
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+          Testing connection with model <strong>${escapeHtml(groqModel)}</strong>...
+        </p>
+      `);
+      testGroqConnection(detectedKey, groqModel)
+        .then(() => {
+          addBotMessage(`
+            <div style="font-weight: 700; color: #34d399; font-size: 0.95rem;">
+              ⚡ Connection Verified & Active!
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+              All 48 agents are now running live with real-time streaming AI! Try asking any agent a question.
+            </p>
+          `);
+        })
+        .catch(err => {
+          addBotMessage(`
+            <div style="color: #f87171; font-weight: 700;">
+              ⚠️ Key saved, but test failed:
+            </div>
+            <p style="font-size: 0.83rem; color: var(--text-muted); margin-top: 4px;">
+              ${escapeHtml(err.message)}
+            </p>
+          `);
+        });
+      return;
+    }
+
+    // Check if user is asking about API key or connection status
+    if (lower.includes("api key") || lower.includes("not connected") || lower.includes("how to connect") || lower.includes("connect api")) {
+      addBotMessage(`
+        <div style="font-weight: 700; color: var(--accent-cyan); font-size: 0.95rem;">
+          🔑 How to Connect Your Free Groq API Key
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 6px;">
+          To enable live streaming AI across all 48 agents:
+        </p>
+        <ol style="margin: 8px 0 8px 18px; font-size: 0.84rem; line-height: 1.6; color: var(--text-secondary);">
+          <li>Get your free key from <a href="https://console.groq.com/keys" target="_blank" style="color: var(--accent-cyan); text-decoration: underline; font-weight: 600;">console.groq.com/keys</a></li>
+          <li>Click the <strong><button class="btn-connect-now" onclick="document.getElementById('settings-modal').classList.add('open')">Connect API Key</button></strong> button in the top header.</li>
+          <li>Paste your key (starts with <code>gsk_...</code>) and click <strong>Save Settings</strong>.</li>
+          <li><em>Or paste your <code>gsk_...</code> key directly here into this chat!</em></li>
+        </ol>
+      `);
+      return;
+    }
+
     // If Groq API Key is configured, run live real-time LLM reasoning!
     if (groqApiKey) {
       runLiveGroqAgent(userQuery);
@@ -517,6 +606,7 @@ Please structure your response strictly to meet these enterprise expectations. U
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
       let fullText = "";
+      let reasoningText = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -530,15 +620,30 @@ Please structure your response strictly to meet these enterprise expectations. U
           if (trimmed.startsWith("data: ") && trimmed !== "data: [DONE]") {
             try {
               const data = JSON.parse(trimmed.slice(6));
-              const token = data.choices[0]?.delta?.content || "";
-              fullText += token;
-              streamBubble.innerHTML = renderSimpleMarkdown(fullText);
-              chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+              const delta = data.choices[0]?.delta || {};
+
+              if (delta.reasoning) {
+                reasoningText += delta.reasoning;
+                if (!fullText) {
+                  const preview = reasoningText.length > 90 ? "..." + reasoningText.slice(-85) : reasoningText;
+                  streamBubble.innerHTML = `<span style="color: var(--text-muted); font-size: 0.82rem; font-style: italic;">💭 Thinking: ${escapeHtml(preview)}</span>`;
+                }
+              }
+
+              if (delta.content) {
+                fullText += delta.content;
+                streamBubble.innerHTML = renderSimpleMarkdown(fullText);
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+              }
             } catch (e) {
               // Ignore partial JSON chunks
             }
           }
         }
+      }
+
+      if (!fullText.trim() && reasoningText.trim()) {
+        streamBubble.innerHTML = renderSimpleMarkdown(reasoningText);
       }
 
     } catch (err) {
@@ -779,12 +884,17 @@ Please structure your response strictly to meet these enterprise expectations. U
   }
 
   // Settings Modal Handlers
-  settingsBtn.addEventListener("click", () => {
+  function openSettingsModal() {
     groqApiKeyInput.value = groqApiKey;
     groqModelSelect.value = groqModel;
     settingsStatusBox.style.display = "none";
     settingsModal.classList.add("open");
-  });
+  }
+
+  settingsBtn.addEventListener("click", openSettingsModal);
+  if (apiStatusBtn) {
+    apiStatusBtn.addEventListener("click", openSettingsModal);
+  }
 
   settingsModalCloseBtn.addEventListener("click", () => {
     settingsModal.classList.remove("open");
@@ -796,6 +906,66 @@ Please structure your response strictly to meet these enterprise expectations. U
     }
   });
 
+  // Test Groq Connection Helper
+  async function testGroqConnection(apiKey, model) {
+    if (!apiKey) {
+      throw new Error("Please enter your Groq API key first.");
+    }
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: "user", content: "ping" }],
+        max_tokens: 5
+      })
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return true;
+  }
+
+  if (btnTestSettings) {
+    btnTestSettings.addEventListener("click", async () => {
+      const key = groqApiKeyInput.value.trim();
+      const model = groqModelSelect.value;
+      if (!key) {
+        settingsStatusBox.style.display = "block";
+        settingsStatusBox.style.background = "rgba(244, 63, 94, 0.15)";
+        settingsStatusBox.style.color = "#fda4af";
+        settingsStatusBox.style.border = "1px solid rgba(244, 63, 94, 0.3)";
+        settingsStatusBox.innerHTML = `⚠️ Please enter an API key before testing.`;
+        return;
+      }
+
+      settingsStatusBox.style.display = "block";
+      settingsStatusBox.style.background = "rgba(99, 102, 241, 0.15)";
+      settingsStatusBox.style.color = "#a5b4fc";
+      settingsStatusBox.style.border = "1px solid rgba(99, 102, 241, 0.3)";
+      settingsStatusBox.innerHTML = `⏳ Testing connection to Groq API with <strong>${model}</strong>...`;
+
+      try {
+        await testGroqConnection(key, model);
+        settingsStatusBox.style.background = "rgba(16, 185, 129, 0.15)";
+        settingsStatusBox.style.color = "#a7f3d0";
+        settingsStatusBox.style.border = "1px solid rgba(16, 185, 129, 0.3)";
+        settingsStatusBox.innerHTML = `✓ Connection verified! API key is active.`;
+      } catch (err) {
+        settingsStatusBox.style.background = "rgba(244, 63, 94, 0.15)";
+        settingsStatusBox.style.color = "#fda4af";
+        settingsStatusBox.style.border = "1px solid rgba(244, 63, 94, 0.3)";
+        settingsStatusBox.innerHTML = `❌ Test failed: <strong>${escapeHtml(err.message)}</strong>`;
+      }
+    });
+  }
+
   btnSaveSettings.addEventListener("click", () => {
     const key = groqApiKeyInput.value.trim();
     const model = groqModelSelect.value;
@@ -805,6 +975,7 @@ Please structure your response strictly to meet these enterprise expectations. U
 
     localStorage.setItem("groq_api_key", key);
     localStorage.setItem("groq_model", model);
+    updateApiStatusUI();
 
     settingsStatusBox.style.display = "block";
     settingsStatusBox.style.background = "rgba(16, 185, 129, 0.15)";
@@ -831,6 +1002,7 @@ Please structure your response strictly to meet these enterprise expectations. U
     groqApiKey = "";
     groqApiKeyInput.value = "";
     localStorage.removeItem("groq_api_key");
+    updateApiStatusUI();
 
     settingsStatusBox.style.display = "block";
     settingsStatusBox.style.background = "rgba(244, 63, 94, 0.15)";
@@ -843,22 +1015,83 @@ Please structure your response strictly to meet these enterprise expectations. U
     }, 800);
   });
 
+  // Auto-load credentials from .env file on local server if not present in localStorage
+  async function loadEnvConfig() {
+    if (groqApiKey) return;
+    try {
+      const response = await fetch(".env");
+      if (!response.ok) return;
+      const text = await response.text();
+
+      const keyMatch = text.match(/GROQ_API_KEY\s*=\s*([^\r\n#]+)/);
+      const modelMatch = text.match(/GROQ_MODEL\s*=\s*([^\r\n#]+)/);
+
+      let updated = false;
+      if (keyMatch && keyMatch[1]) {
+        const foundKey = keyMatch[1].trim();
+        if (foundKey && !foundKey.includes("your_groq_api_key")) {
+          groqApiKey = foundKey;
+          localStorage.setItem("groq_api_key", foundKey);
+          updated = true;
+        }
+      }
+
+      if (modelMatch && modelMatch[1]) {
+        const foundModel = modelMatch[1].trim();
+        if (VALID_GROQ_MODELS.includes(foundModel)) {
+          groqModel = foundModel;
+          localStorage.setItem("groq_model", foundModel);
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        updateApiStatusUI();
+      }
+    } catch (e) {
+      // Ignore if .env is inaccessible or on cross-origin static hosts
+    }
+  }
+
   // Initial Run
   renderDomainPills();
   renderAgents();
   bindQuickPrompts();
+  updateApiStatusUI();
 
-  if (groqApiKey) {
-    setTimeout(() => {
-      addBotMessage(`
-        <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #34d399; font-size: 0.92rem;">
-          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
-          Groq Live AI Connected & Ready!
-        </div>
-        <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 4px;">
-          Model: <strong>${escapeHtml(groqModel)}</strong>. All 48 agents are now running with <strong>real-time streaming AI reasoning</strong>!
-        </p>
-      `);
-    }, 400);
-  }
+  (async () => {
+    if (!groqApiKey) {
+      await loadEnvConfig();
+    }
+
+    if (groqApiKey) {
+      setTimeout(() => {
+        addBotMessage(`
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #34d399; font-size: 0.92rem;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+            Groq Live AI Connected & Ready!
+          </div>
+          <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 4px;">
+            Model: <strong>${escapeHtml(groqModel)}</strong>. All 48 agents are now running with <strong>real-time streaming AI reasoning</strong>!
+          </p>
+        `);
+      }, 400);
+    } else {
+      setTimeout(() => {
+        addBotMessage(`
+          <div class="api-notice-banner" style="margin: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+              <div>
+                <div style="font-weight: 700; color: #fb7185; font-size: 0.88rem;">⚡ Live AI API Key Not Connected</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+                  Currently running in simulated preview mode. Add a free Groq API key or define it in your .env file.
+                </div>
+              </div>
+              <button class="btn-connect-now" onclick="document.getElementById('settings-modal').classList.add('open')">Connect API Key</button>
+            </div>
+          </div>
+        `);
+      }, 600);
+    }
+  })();
 });
