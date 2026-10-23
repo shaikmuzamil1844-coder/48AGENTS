@@ -35,12 +35,63 @@ document.addEventListener("DOMContentLoaded", () => {
   const apiStatusBtn = document.getElementById("api-status-btn");
   const apiStatusText = document.getElementById("api-status-text");
 
+  // Mobile & History Elements
+  const historyBtn = document.getElementById("history-btn");
+  const chatHistoryBtn = document.getElementById("chat-history-btn");
+  const newChatBtn = document.getElementById("new-chat-btn");
+  const historyModal = document.getElementById("history-modal");
+  const historyModalCloseBtn = document.getElementById("history-modal-close-btn");
+  const historyListContainer = document.getElementById("history-list-container");
+  const btnModalNewChat = document.getElementById("btn-modal-new-chat");
+  const btnClearAllHistory = document.getElementById("btn-clear-all-history");
+  const btnMobileBack = document.getElementById("btn-mobile-back");
+  const mobileNavCatalog = document.getElementById("mobile-nav-catalog");
+  const mobileNavChat = document.getElementById("mobile-nav-chat");
+  const mobileNavHistory = document.getElementById("mobile-nav-history");
+  const mobileChatBadge = document.getElementById("mobile-chat-badge");
+
   // State
   let activeDomain = "all";
   let activeAgent = null;
   let uploadedDocumentContent = null;
   let uploadedDocumentName = null;
   let groqApiKey = (localStorage.getItem("groq_api_key") || "").trim();
+
+  // Chat History State
+  const STORAGE_KEY_SESSIONS = "copilot_chat_sessions_v2";
+  const STORAGE_KEY_ACTIVE_ID = "copilot_active_session_id_v2";
+
+  let sessions = [];
+  try {
+    sessions = JSON.parse(localStorage.getItem(STORAGE_KEY_SESSIONS)) || [];
+  } catch (e) {
+    sessions = [];
+  }
+
+  let currentSessionId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+  let currentSession = sessions.find(s => s.id === currentSessionId);
+
+  if (!currentSession) {
+    currentSessionId = "session_" + Date.now();
+    currentSession = {
+      id: currentSessionId,
+      title: "New Conversation",
+      agentName: "Catalog Assistant",
+      updatedAt: Date.now(),
+      messages: []
+    };
+    sessions.unshift(currentSession);
+    saveSessions();
+  }
+
+  function saveSessions() {
+    try {
+      localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(sessions.slice(0, 50)));
+      localStorage.setItem(STORAGE_KEY_ACTIVE_ID, currentSessionId);
+    } catch (e) {
+      console.warn("Storage quota exceeded", e);
+    }
+  }
 
   const VALID_GROQ_MODELS = [
     "openai/gpt-oss-120b",
@@ -193,6 +244,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".agent-card").forEach(c => c.classList.remove("selected"));
     renderAgents();
 
+    if (currentSession) {
+      currentSession.agentName = agent.name;
+      saveSessions();
+    }
+
+    // Switch view to chat automatically on mobile
+    switchMobileView("chat");
+
     // Add bot notification
     addBotMessage(`
       <div style="font-weight: 700; color: var(--accent-cyan); font-size: 0.95rem;">
@@ -308,25 +367,29 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Chat Helpers
-  function addMessage(html, type = "bot") {
+  function addMessage(html, type = "bot", save = true) {
     const msg = document.createElement("div");
     msg.className = `message ${type}`;
     msg.innerHTML = `
       <div class="message-avatar ${type === "bot" ? "bot-avatar" : "user-avatar"}">
-        ${type === "bot" ? "AI" : "You"}
+        ${type === "bot" ? (activeAgent ? "⚡" : "AI") : "You"}
       </div>
       <div class="message-bubble">${html}</div>
     `;
     chatMessagesContainer.appendChild(msg);
     chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+
+    if (save) {
+      recordMessage(html, type);
+    }
   }
 
   function addBotMessage(html) {
-    addMessage(html, "bot");
+    addMessage(html, "bot", true);
   }
 
   function addUserMessage(text) {
-    addMessage(`<p>${escapeHtml(text)}</p>`, "user");
+    addMessage(`<p>${escapeHtml(text)}</p>`, "user", true);
   }
 
   function escapeHtml(text) {
@@ -646,6 +709,8 @@ Please structure your response strictly to meet these enterprise expectations. U
         streamBubble.innerHTML = renderSimpleMarkdown(reasoningText);
       }
 
+      recordMessage(streamBubble.innerHTML, "bot");
+
     } catch (err) {
       streamBubble.innerHTML = `
         <div style="color: #f87171; font-size: 0.85rem;">
@@ -655,6 +720,7 @@ Please structure your response strictly to meet these enterprise expectations. U
           Please check your Groq API key in ⚙️ Settings or make sure your internet connection is active.
         </p>
       `;
+      recordMessage(streamBubble.innerHTML, "bot");
     }
   }
 
@@ -1053,11 +1119,233 @@ Please structure your response strictly to meet these enterprise expectations. U
     }
   }
 
+  // History Modal Handlers & Logic
+  function formatRelativeTime(ts) {
+    if (!ts) return "";
+    const diff = Math.max(0, Date.now() - ts);
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  function renderHistoryList() {
+    if (!historyListContainer) return;
+    historyListContainer.innerHTML = "";
+
+    if (!sessions || sessions.length === 0) {
+      historyListContainer.innerHTML = `
+        <div class="history-empty-state">
+          <p style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">No saved conversations</p>
+          <p style="margin-top: 4px; font-size: 0.8rem;">Start a chat with any of the 48 agents to begin!</p>
+        </div>
+      `;
+      return;
+    }
+
+    sessions.forEach(session => {
+      const card = document.createElement("div");
+      card.className = `history-item-card ${session.id === currentSessionId ? "active-session" : ""}`;
+      const count = session.messages ? session.messages.length : 0;
+      const relativeTime = formatRelativeTime(session.updatedAt);
+
+      card.innerHTML = `
+        <div class="history-item-info">
+          <div class="history-item-title">${escapeHtml(session.title || "Conversation")}</div>
+          <div class="history-item-meta">
+            <span class="history-item-badge">${escapeHtml(session.agentName || "Agent")}</span>
+            <span>${relativeTime}</span>
+            <span>• ${count} msgs</span>
+          </div>
+        </div>
+        <button class="btn-history-delete" title="Delete conversation" data-id="${session.id}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      `;
+
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-history-delete")) return;
+        loadSession(session.id);
+      });
+
+      const deleteBtn = card.querySelector(".btn-history-delete");
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteSession(session.id);
+      });
+
+      historyListContainer.appendChild(card);
+    });
+  }
+
+  function openHistoryModal() {
+    renderHistoryList();
+    if (historyModal) historyModal.classList.add("open");
+  }
+
+  function closeHistoryModal() {
+    if (historyModal) historyModal.classList.remove("open");
+  }
+
+  function startNewChat() {
+    currentSessionId = "session_" + Date.now();
+    currentSession = {
+      id: currentSessionId,
+      title: "New Conversation",
+      agentName: activeAgent ? activeAgent.name : "Catalog Assistant",
+      updatedAt: Date.now(),
+      messages: []
+    };
+    sessions.unshift(currentSession);
+    saveSessions();
+
+    chatMessagesContainer.innerHTML = "";
+    renderWelcomeMessage();
+    closeHistoryModal();
+    switchMobileView("chat");
+  }
+
+  function renderWelcomeMessage() {
+    chatMessagesContainer.innerHTML = `
+      <div class="message bot">
+        <div class="message-avatar bot-avatar">${activeAgent ? "⚡" : "AI"}</div>
+        <div class="message-bubble">
+          <p><strong>Welcome to the Copilot Agent Hub!</strong></p>
+          <p style="margin-top: 6px; font-size: 0.86rem; color: var(--text-secondary);">
+            I am your interactive AI Guide. You can:
+          </p>
+          <ul style="margin: 8px 0 8px 18px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6;">
+            <li>Click any of the <strong>48 Agent cards</strong> on the left to adopt its persona.</li>
+            <li>Ask me for recommendations: <em>"Which agent helps with code reviews or sprint planning?"</em></li>
+            <li>Upload or paste any notes/documents to test agent reasoning.</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  function loadSession(sessionId) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    currentSessionId = sessionId;
+    currentSession = session;
+    saveSessions();
+
+    chatMessagesContainer.innerHTML = "";
+    if (session.messages && session.messages.length > 0) {
+      session.messages.forEach(m => {
+        addMessage(m.html, m.type, false);
+      });
+    } else {
+      renderWelcomeMessage();
+    }
+
+    if (session.agentName && session.agentName !== "Catalog Assistant") {
+      const match = AGENT_CATALOG.find(a => a.name === session.agentName);
+      if (match) {
+        activeAgent = match;
+        activeAgentLabel.textContent = match.name;
+      }
+    } else {
+      activeAgent = null;
+      activeAgentLabel.textContent = "Catalog Assistant";
+    }
+    renderAgents();
+
+    closeHistoryModal();
+    switchMobileView("chat");
+  }
+
+  function deleteSession(id) {
+    sessions = sessions.filter(s => s.id !== id);
+    if (currentSessionId === id) {
+      if (sessions.length > 0) {
+        loadSession(sessions[0].id);
+      } else {
+        startNewChat();
+      }
+    } else {
+      saveSessions();
+      renderHistoryList();
+    }
+  }
+
+  function clearAllHistory() {
+    if (confirm("Are you sure you want to clear all conversation history?")) {
+      sessions = [];
+      localStorage.removeItem(STORAGE_KEY_SESSIONS);
+      startNewChat();
+      renderHistoryList();
+    }
+  }
+
+  // Mobile View Switcher
+  let currentMobileView = "catalog";
+  if (appContainer) {
+    appContainer.classList.add("view-catalog");
+  }
+
+  function switchMobileView(view) {
+    currentMobileView = view;
+    if (!appContainer) return;
+
+    if (view === "catalog") {
+      appContainer.classList.remove("view-chat");
+      appContainer.classList.add("view-catalog");
+      if (mobileNavCatalog) mobileNavCatalog.classList.add("active");
+      if (mobileNavChat) mobileNavChat.classList.remove("active");
+      if (mobileNavHistory) mobileNavHistory.classList.remove("active");
+    } else if (view === "chat") {
+      appContainer.classList.remove("view-catalog");
+      appContainer.classList.add("view-chat");
+      if (mobileNavChat) mobileNavChat.classList.add("active");
+      if (mobileNavCatalog) mobileNavCatalog.classList.remove("active");
+      if (mobileNavHistory) mobileNavHistory.classList.remove("active");
+      if (mobileChatBadge) mobileChatBadge.style.display = "none";
+      setTimeout(() => {
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+      }, 50);
+    }
+  }
+
+  // History & Mobile Event Bindings
+  if (historyBtn) historyBtn.addEventListener("click", openHistoryModal);
+  if (chatHistoryBtn) chatHistoryBtn.addEventListener("click", openHistoryModal);
+  if (historyModalCloseBtn) historyModalCloseBtn.addEventListener("click", closeHistoryModal);
+  if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
+  if (btnModalNewChat) btnModalNewChat.addEventListener("click", startNewChat);
+  if (btnClearAllHistory) btnClearAllHistory.addEventListener("click", clearAllHistory);
+  if (historyModal) {
+    historyModal.addEventListener("click", (e) => {
+      if (e.target === historyModal) closeHistoryModal();
+    });
+  }
+
+  if (mobileNavCatalog) mobileNavCatalog.addEventListener("click", () => switchMobileView("catalog"));
+  if (mobileNavChat) mobileNavChat.addEventListener("click", () => switchMobileView("chat"));
+  if (mobileNavHistory) mobileNavHistory.addEventListener("click", openHistoryModal);
+  if (btnMobileBack) btnMobileBack.addEventListener("click", () => switchMobileView("catalog"));
+
   // Initial Run
   renderDomainPills();
   renderAgents();
   bindQuickPrompts();
   updateApiStatusUI();
+
+  // Restore active session messages if present
+  if (currentSession && currentSession.messages && currentSession.messages.length > 0) {
+    chatMessagesContainer.innerHTML = "";
+    currentSession.messages.forEach(m => {
+      addMessage(m.html, m.type, false);
+    });
+  }
 
   (async () => {
     if (!groqApiKey) {
@@ -1065,33 +1353,37 @@ Please structure your response strictly to meet these enterprise expectations. U
     }
 
     if (groqApiKey) {
-      setTimeout(() => {
-        addBotMessage(`
-          <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #34d399; font-size: 0.92rem;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
-            Groq Live AI Connected & Ready!
-          </div>
-          <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 4px;">
-            Model: <strong>${escapeHtml(groqModel)}</strong>. All 48 agents are now running with <strong>real-time streaming AI reasoning</strong>!
-          </p>
-        `);
-      }, 400);
-    } else {
-      setTimeout(() => {
-        addBotMessage(`
-          <div class="api-notice-banner" style="margin: 0;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-              <div>
-                <div style="font-weight: 700; color: #fb7185; font-size: 0.88rem;">⚡ Live AI API Key Not Connected</div>
-                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
-                  Currently running in simulated preview mode. Add a free Groq API key or define it in your .env file.
-                </div>
-              </div>
-              <button class="btn-connect-now" onclick="document.getElementById('settings-modal').classList.add('open')">Connect API Key</button>
+      if (!currentSession || currentSession.messages.length === 0) {
+        setTimeout(() => {
+          addBotMessage(`
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #34d399; font-size: 0.92rem;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+              Groq Live AI Connected & Ready!
             </div>
-          </div>
-        `);
-      }, 600);
+            <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 4px;">
+              Model: <strong>${escapeHtml(groqModel)}</strong>. All 48 agents are now running with <strong>real-time streaming AI reasoning</strong>!
+            </p>
+          `);
+        }, 400);
+      }
+    } else {
+      if (!currentSession || currentSession.messages.length === 0) {
+        setTimeout(() => {
+          addBotMessage(`
+            <div class="api-notice-banner" style="margin: 0;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                <div>
+                  <div style="font-weight: 700; color: #fb7185; font-size: 0.88rem;">⚡ Live AI API Key Not Connected</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+                    Currently running in simulated preview mode. Add a free Groq API key or define it in your .env file.
+                  </div>
+                </div>
+                <button class="btn-connect-now" onclick="document.getElementById('settings-modal').classList.add('open')">Connect API Key</button>
+              </div>
+            </div>
+          `);
+        }, 600);
+      }
     }
   })();
 });

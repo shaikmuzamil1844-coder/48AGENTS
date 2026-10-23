@@ -249,6 +249,8 @@ body {
   grid-template-columns: minmax(0, 1fr) 680px;
 }
 
+}
+
 @media (max-width: 1200px) {
   .app-container {
     grid-template-columns: minmax(0, 1fr) 420px;
@@ -258,26 +260,386 @@ body {
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .app-container {
     grid-template-columns: minmax(0, 1fr) 360px;
   }
   .app-container.chat-wide {
-    grid-template-columns: minmax(0, 1fr) 460px;
+    grid-template-columns: minmax(0, 1fr) 440px;
   }
 }
 
-@media (max-width: 700px) {
+/* Action Pills & Mobile Back Button */
+.btn-mobile-back {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--accent-cyan);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-mobile-back:hover {
+  background: rgba(6, 182, 212, 0.12);
+}
+
+.btn-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: var(--radius-full);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-action-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* Mobile Bottom Navigation Bar */
+.mobile-nav-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: rgba(11, 15, 25, 0.95);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-color);
+  z-index: 60;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  justify-content: space-around;
+  align-items: center;
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-btn.active {
+  color: var(--accent-cyan);
+}
+
+.mobile-nav-btn.active svg {
+  stroke: var(--accent-cyan);
+  filter: drop-shadow(0 0 6px var(--accent-cyan));
+}
+
+.mobile-chat-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  display: none;
+}
+
+/* Chat History Modal & Cards */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-top: 0.75rem;
+}
+
+.history-item-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-item-card:hover {
+  border-color: var(--accent-primary);
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+}
+
+.history-item-card.active-session {
+  border-color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.history-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.history-item-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-meta {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-item-badge {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.btn-history-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-history-delete:hover {
+  color: var(--accent-rose);
+  background: rgba(244, 63, 94, 0.12);
+}
+
+.history-empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Mobile Viewport Architecture (Screens <= 768px) */
+@media (max-width: 768px) {
   html, body {
-    overflow-y: auto;
-    height: auto;
-    max-height: none;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    max-width: 100vw;
   }
+
+  .app-header {
+    height: 56px;
+    padding: 0 0.85rem;
+  }
+
+  .brand-title span:first-child {
+    font-size: 0.95rem;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .header-actions {
+    gap: 0.35rem;
+  }
+
+  .api-status-pill {
+    padding: 0.22rem 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+  }
+
   .app-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 56px - 56px);
+    max-height: calc(100dvh - 56px - 56px);
+    overflow: hidden;
+    position: relative;
+    grid-template-columns: none !important;
+  }
+
+  /* Dynamic View Switching between Catalog and Chat on Mobile */
+  .app-container.view-catalog .catalog-panel {
+    display: flex !important;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    border-right: none;
+  }
+
+  .app-container.view-catalog .chat-panel {
+    display: none !important;
+  }
+
+  .app-container.view-chat .catalog-panel {
+    display: none !important;
+  }
+
+  .app-container.view-chat .chat-panel {
+    display: flex !important;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    border-left: none;
+  }
+
+  .btn-mobile-back {
+    display: inline-flex;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .btn-pill-label {
+    display: none;
+  }
+
+  .mobile-nav-bar {
+    display: flex;
+  }
+
+  .catalog-header {
+    padding: 0.85rem 1rem 0.4rem;
+    gap: 0.65rem;
+  }
+
+  .catalog-hero h1 {
+    font-size: 1.25rem;
+  }
+
+  .catalog-hero p {
+    font-size: 0.78rem;
+  }
+
+  .search-filter-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .agent-grid {
     grid-template-columns: 1fr;
-    height: auto;
-    overflow-y: auto;
-    overflow-x: hidden;
+    padding: 0.65rem 0.85rem 1.5rem;
+    gap: 0.75rem;
+  }
+
+  .domain-pills {
+    padding: 0.35rem 0.85rem 0.5rem;
+  }
+
+  .chat-panel {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .chat-tabs {
+    padding: 0.5rem 0.85rem;
+  }
+
+  .chat-messages {
+    padding: 0.75rem;
+  }
+
+  .message {
+    max-width: 95% !important;
+  }
+
+  .message-bubble {
+    padding: 0.8rem 0.95rem;
+    font-size: 0.84rem;
+  }
+
+  .chat-input-bar {
+    padding: 6px 8px;
+  }
+
+  .chat-input {
+    padding: 8px 10px;
+    font-size: 0.84rem;
+  }
+
+  .btn-send {
+    width: 38px;
+    height: 38px;
+  }
+
+  .quick-prompts {
+    padding: 4px 8px;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .quick-btn {
+    white-space: nowrap;
+    font-size: 0.74rem;
+    padding: 4px 8px;
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    max-height: 88vh;
+    padding: 1.2rem 1rem;
+    width: 96%;
   }
 }
 

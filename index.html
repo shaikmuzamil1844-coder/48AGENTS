@@ -35,6 +35,12 @@
         <span class="status-dot"></span>
         <span id="api-status-text">Connect API Key</span>
       </button>
+      <button class="btn-icon" id="history-btn" title="View Chat History">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </button>
       <button class="btn-icon" id="settings-btn" title="Configure Groq API Key">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
@@ -118,18 +124,40 @@
     <section class="chat-panel">
       <!-- Active Persona Banner -->
       <div class="chat-tabs">
-        <div class="chat-tab active" id="tab-chat">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <span id="active-agent-label">Catalog Assistant</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
+          <button class="btn-mobile-back" id="btn-mobile-back" title="Back to Catalog">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span>Catalog</span>
+          </button>
+          <div class="chat-tab active" id="tab-chat">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span id="active-agent-label">Catalog Assistant</span>
+          </div>
         </div>
         
         <div class="chat-tab-actions">
+          <button class="btn-action-pill" id="new-chat-btn" title="Start a fresh conversation">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span class="btn-pill-label">New Chat</span>
+          </button>
+          <button class="btn-action-pill" id="chat-history-btn" title="View past chat sessions">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span class="btn-pill-label">History</span>
+          </button>
           <div class="chat-tab" id="tab-doc-status" style="display: none; padding: 0;">
-            <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);" id="attached-doc-badge">Document Active</span>
+            <span class="badge-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);" id="attached-doc-badge">Doc Active</span>
           </div>
-          <button class="btn-chat-toggle" id="chat-width-toggle-btn" title="Expand / Compact Chat View">
+          <button class="btn-chat-toggle hide-on-mobile" id="chat-width-toggle-btn" title="Expand / Compact Chat View">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="15 3 21 3 21 9"></polyline>
               <polyline points="9 21 3 21 3 15"></polyline>
@@ -249,6 +277,69 @@
       </div>
     </div>
   </div>
+
+  <!-- Chat History Modal -->
+  <div class="modal-overlay" id="history-modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <button class="modal-close" id="history-modal-close-btn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div>
+        <h2 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <span>🕒 Chat History</span>
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 3px;">
+          Previous conversations saved locally on your device.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap;">
+        <button class="btn-send" style="padding: 0 14px; height: 36px; font-size: 0.82rem; border-radius: var(--radius-sm); font-weight: 600;" id="btn-modal-new-chat">
+          + Start New Chat
+        </button>
+        <button class="btn-action" style="padding: 0 12px; height: 36px; font-size: 0.8rem; border-radius: var(--radius-sm); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.3); cursor: pointer;" id="btn-clear-all-history">
+          Clear All History
+        </button>
+      </div>
+
+      <div class="history-list" id="history-list-container">
+        <!-- Injected dynamically by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-nav-bar" id="mobile-nav-bar">
+    <button class="mobile-nav-btn active" id="mobile-nav-catalog" data-view="catalog">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span>Catalog</span>
+    </button>
+    <button class="mobile-nav-btn" id="mobile-nav-chat" data-view="chat">
+      <div style="position: relative; display: inline-flex;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="mobile-chat-badge" id="mobile-chat-badge"></span>
+      </div>
+      <span>Copilot Chat</span>
+    </button>
+    <button class="mobile-nav-btn" id="mobile-nav-history" data-view="history">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span>History</span>
+    </button>
+  </nav>
 
   <script src="data.js"></script>
   <script src="app.js"></script>
