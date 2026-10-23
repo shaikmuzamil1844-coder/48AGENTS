@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let uploadedDocumentContent = null;
   let uploadedDocumentName = null;
   let groqApiKey = (localStorage.getItem("groq_api_key") || "").trim();
+  let currentMobileView = "catalog";
 
   // Chat History State
   const STORAGE_KEY_SESSIONS = "copilot_chat_sessions_v2";
@@ -90,6 +91,52 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem(STORAGE_KEY_ACTIVE_ID, currentSessionId);
     } catch (e) {
       console.warn("Storage quota exceeded", e);
+    }
+  }
+
+  function recordMessage(html, type) {
+    try {
+      if (!currentSession) {
+        currentSessionId = "session_" + Date.now();
+        currentSession = {
+          id: currentSessionId,
+          title: "New Conversation",
+          agentName: activeAgent ? activeAgent.name : "Catalog Assistant",
+          updatedAt: Date.now(),
+          messages: []
+        };
+        sessions.unshift(currentSession);
+      }
+
+      if (!currentSession.messages) {
+        currentSession.messages = [];
+      }
+
+      currentSession.messages.push({
+        html,
+        type,
+        timestamp: Date.now()
+      });
+      currentSession.updatedAt = Date.now();
+
+      if (type === "user" && (currentSession.title === "New Conversation" || !currentSession.title)) {
+        const plainText = html.replace(/<[^>]+>/g, "").trim();
+        if (plainText) {
+          currentSession.title = plainText.length > 28 ? plainText.slice(0, 28) + "..." : plainText;
+        }
+      }
+
+      if (activeAgent) {
+        currentSession.agentName = activeAgent.name;
+      }
+
+      saveSessions();
+
+      if (currentMobileView === "catalog" && type === "bot" && mobileChatBadge) {
+        mobileChatBadge.style.display = "flex";
+      }
+    } catch (e) {
+      console.warn("Could not save message to history", e);
     }
   }
 
@@ -707,6 +754,8 @@ Please structure your response strictly to meet these enterprise expectations. U
 
       if (!fullText.trim() && reasoningText.trim()) {
         streamBubble.innerHTML = renderSimpleMarkdown(reasoningText);
+      } else if (!fullText.trim() && !reasoningText.trim()) {
+        streamBubble.innerHTML = `<p>Hello! I am your <strong>${activeAgent ? escapeHtml(activeAgent.name) : "Catalog Assistant"}</strong>. How can I assist you with the 48 enterprise agents today?</p>`;
       }
 
       recordMessage(streamBubble.innerHTML, "bot");
@@ -1287,7 +1336,7 @@ Please structure your response strictly to meet these enterprise expectations. U
   }
 
   // Mobile View Switcher
-  let currentMobileView = "catalog";
+  currentMobileView = "catalog";
   if (appContainer) {
     appContainer.classList.add("view-catalog");
   }
