@@ -47,15 +47,6 @@
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
       </button>
-      <button class="btn-action-pill highlight" id="btn-load-sample-doc" title="Load sample Q3 enterprise report with grounding citations">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-        </svg>
-        <span class="btn-pill-label">Sample Q3 Report</span>
-      </button>
       <label class="btn-icon" title="Upload Document or Notes" style="cursor: pointer;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -198,7 +189,6 @@
 
       <!-- Quick Suggestion Buttons -->
       <div class="quick-prompts" id="quick-prompts-container">
-        <button class="quick-btn" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;" data-query="Analyze the Q3 Audit Report for Executive Risks & Sprint Velocity">📄 Q3 Audit Citations</button>
         <button class="quick-btn" data-query="Show me all Tier 1 Executive agents">Executive Tier 1</button>
         <button class="quick-btn" data-query="Which agents are best for Banking & Risk?">Banking Agents</button>
         <button class="quick-btn" data-query="How does the Sprint Planning Agent work?">Sprint Planning</button>
@@ -350,92 +340,6 @@
       <span>History</span>
     </button>
   </nav>
-
-  <!-- Grounding Inspector Modal (Zero-Hallucination Verification) -->
-  <div class="modal-overlay" id="grounding-modal">
-    <div class="modal-content grounding-modal-card">
-      <button class="modal-close" id="grounding-modal-close-btn" title="Close Inspector">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-
-      <div class="grounding-header">
-        <div class="grounding-badge-shield">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <polyline points="9 12 11 14 15 10"></polyline>
-          </svg>
-          <span>Grounding Inspector</span>
-        </div>
-        <div class="grounding-confidence-tag" id="grounding-confidence-tag">
-          100% Verification Match • Zero Hallucination
-        </div>
-      </div>
-
-      <div class="grounding-section">
-        <div class="grounding-label">Agent Quoted Claim / Metric:</div>
-        <div class="grounding-quote-box" id="grounding-quoted-metric">
-          <!-- Injected dynamically -->
-        </div>
-      </div>
-
-      <div class="grounding-section">
-        <div class="grounding-label" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Verified Document Source Passage:</span>
-          <span class="grounding-doc-ref" id="grounding-doc-ref-badge">Doc p.1 §2</span>
-        </div>
-        <div class="grounding-source-box" id="grounding-source-passage">
-          <!-- Injected dynamically with highlighted snippet -->
-        </div>
-      </div>
-
-      <div class="grounding-meta-grid">
-        <div class="grounding-meta-card">
-          <span class="meta-card-label">Source Document</span>
-          <span class="meta-card-value" id="grounding-meta-filename">Acme_Q3_Audit.txt</span>
-        </div>
-        <div class="grounding-meta-card">
-          <span class="meta-card-label">Location</span>
-          <span class="meta-card-value" id="grounding-meta-location">Page 1, Section 2</span>
-        </div>
-        <div class="grounding-meta-card">
-          <span class="meta-card-label">Integrity Status</span>
-          <span class="meta-card-value text-emerald">Audit Verified</span>
-        </div>
-      </div>
-
-      <div class="grounding-actions">
-        <button class="btn-send" id="btn-copy-citation-excerpt" style="flex: 1; height: 38px; font-size: 0.84rem; border-radius: var(--radius-sm);">
-          📋 Copy Verified Excerpt
-        </button>
-        <button class="btn-action" id="btn-view-full-doc" style="padding: 0 14px; height: 38px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.82rem; cursor: pointer;">
-          📄 View Full Document
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Full Document Viewer Modal -->
-  <div class="modal-overlay" id="full-doc-modal">
-    <div class="modal-content" style="max-width: 720px; max-height: 85vh;">
-      <button class="modal-close" id="full-doc-modal-close-btn">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-      <div style="margin-bottom: 0.75rem;">
-        <h3 id="full-doc-modal-title" style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">Document Content</h3>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Inspect complete source text used for grounding and verification</p>
-      </div>
-      <pre id="full-doc-modal-content" style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; font-family: monospace; font-size: 0.82rem; color: #cbd5e1; white-space: pre-wrap; max-height: 60vh; overflow-y: auto;"></pre>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toast-container"></div>
 
   <script src="data.js"></script>
   <script src="app.js"></script>
